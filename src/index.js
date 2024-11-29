@@ -141,5 +141,5 @@ client.once('ready', async () => {
 client.login(token);
 
 app.listen(port, () => {
-    console.log(`Web app is running at radiobot.my.pebble.host:${port}`);
+    console.log(`Web app is running at http://localhost:${port}`);
 });
