@@ -22,8 +22,8 @@ app.use(express.static('public'));
 // Endpoint to search radio stations
 app.get('/search', async (req, res) => {
     const query = req.query.query;
+    console.log(`Search query: ${query}`);
     try {
-        // Remove the 'limit' parameter to fetch all stations
         const response = await axios.get('https://de1.api.radio-browser.info/json/stations/search', {
             params: {
                 name: query,
@@ -32,6 +32,7 @@ app.get('/search', async (req, res) => {
                 hidebroken: true // Optional: filter out broken streams if needed
             }
         });
+        console.log(`Stations found: ${response.data.length}`);
         res.json(response.data);
     } catch (error) {
         console.error('Error retrieving stations:', error);
@@ -49,6 +50,7 @@ const client = new Client({
 
 // Function to join a voice channel and play a station
 async function playStation(stationName, voiceChannelId, announceChannelId) {
+    console.log(`Attempting to play station: ${stationName}`);
     try {
         const stationUrl = await getRadioStationUrl(stationName);
 
@@ -57,6 +59,7 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
             return;
         }
 
+        console.log(`Joining voice channel: ${voiceChannelId}`);
         const connection = joinVoiceChannel({
             channelId: voiceChannelId,
             guildId,
@@ -64,6 +67,10 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
         });
 
         const process = spawn(ffmpegStatic, ['-i', stationUrl, '-f', 's16le', '-ac', '2', '-ar', '48000', '-']);
+        process.stderr.on('data', (data) => {
+            console.error(`FFmpeg error: ${data.toString()}`);
+        });
+
         const resource = createAudioResource(process.stdout, {
             inputType: StreamType.Raw,
         });
@@ -73,7 +80,12 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
         connection.subscribe(player);
 
         player.on(AudioPlayerStatus.Idle, () => {
+            console.log(`Player is now idle, disconnecting from channel.`);
             connection.destroy();
+        });
+
+        player.on('stateChange', (oldState, newState) => {
+            console.log(`Player transitioned from ${oldState.status} to ${newState.status}`);
         });
 
         console.log(`Now playing: ${stationUrl}`);
@@ -82,7 +94,7 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
         if (announceChannelId) {
             const announceChannel = client.channels.cache.get(announceChannelId);
             if (announceChannel) {
-                announceChannel.send(`Now playing: **${stationName}**`);
+                announceChannel.send(`Now playing: **${stationName}**`).catch(err => console.error('Error sending message:', err));
             } else {
                 console.warn('Announcement channel not found!');
             }
@@ -95,6 +107,7 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
 
 // Fetch radio station URL
 async function getRadioStationUrl(stationName) {
+    console.log(`Fetching URL for station: ${stationName}`);
     try {
         const response = await axios.get('https://de1.api.radio-browser.info/json/stations/search', {
             params: {
@@ -106,7 +119,7 @@ async function getRadioStationUrl(stationName) {
 
         if (response.status === 200 && response.data.length > 0) {
             const station = response.data[0];
-            console.log(`Found station: ${station.name}`);
+            console.log(`Found station: ${station.name}, URL: ${station.url}`);
             return station.url;
         } else {
             console.warn(`No station found for: ${stationName}`);
