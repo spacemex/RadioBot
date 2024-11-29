@@ -48,7 +48,6 @@ const client = new Client({
     ],
 });
 
-// Function to join a voice channel and play a station
 async function playStation(stationName, voiceChannelId, announceChannelId) {
     console.log(`Attempting to play station: ${stationName}`);
     try {
@@ -83,9 +82,9 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
         player.play(resource);
         connection.subscribe(player);
 
-        player.on(AudioPlayerStatus.Idle, () => {
-            console.log(`Player is now idle, disconnecting from channel.`);
-            connection.destroy();
+        player.on(AudioPlayerStatus.Idle, async () => {
+            console.log(`Player is idle, attempting to reconnect.`);
+            await playStation(stationName, voiceChannelId, announceChannelId);
         });
 
         player.on('stateChange', (oldState, newState) => {
@@ -108,7 +107,6 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
     }
 }
 
-// Fetch radio station URL
 async function getRadioStationUrl(stationName) {
     console.log(`Fetching URL for station: ${stationName}`);
     try {
@@ -140,7 +138,6 @@ client.once('ready', async () => {
     }
 });
 
-// Start both the Discord bot and the web server
 client.login(token);
 
 app.listen(port, () => {
