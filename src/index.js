@@ -28,8 +28,8 @@ app.get('/search', async (req, res) => {
             params: {
                 name: query,
                 tagList: query,
-                order: 'name',  // Maintain ordering if necessary
-                hidebroken: true // Optional: filter out broken streams if needed
+                order: 'name',
+                hidebroken: true
             }
         });
         console.log(`Stations found: ${response.data.length}`);
@@ -44,7 +44,7 @@ const client = new Client({
     intents: [
         IntentsBitField.Flags.Guilds,
         IntentsBitField.Flags.GuildVoiceStates,
-        IntentsBitField.Flags.GuildMessages, // Required to send messages
+        IntentsBitField.Flags.GuildMessages,
     ],
 });
 
@@ -66,9 +66,13 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
             adapterCreator: client.guilds.cache.get(guildId).voiceAdapterCreator,
         });
 
-        const process = spawn(ffmpegStatic, ['-i', stationUrl, '-f', 's16le', '-ac', '2', '-ar', '48000', '-']);
+        const process = spawn(ffmpegStatic, [
+            '-reconnect', '1', '-reconnect_at_eof', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '2',
+            '-i', stationUrl, '-f', 's16le', '-ac', '2', '-ar', '48000', '-bufsize', '64k', '-'
+        ]);
+
         process.stderr.on('data', (data) => {
-            console.error(`FFmpeg error: ${data.toString()}`);
+            console.error(`FFmpeg error detail: ${data.toString()}`);
         });
 
         const resource = createAudioResource(process.stdout, {
@@ -90,7 +94,6 @@ async function playStation(stationName, voiceChannelId, announceChannelId) {
 
         console.log(`Now playing: ${stationUrl}`);
 
-        // Announce the station without the URL
         if (announceChannelId) {
             const announceChannel = client.channels.cache.get(announceChannelId);
             if (announceChannel) {
