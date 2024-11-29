@@ -17,7 +17,8 @@
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
-    "ffmpeg-static": "^5.2.0",
     "opusscript": "^0.0.8"
-  }
+  },
+  "nodeVersion": "23.1.0",
+  "file": "bot.js"
 }
