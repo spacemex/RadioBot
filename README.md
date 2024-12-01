@@ -15,6 +15,6 @@ PORT=your_port
 
 ### Page <your_ip>:${PORT}
 `127.0.0.0:8138` 
-`hhtp://localhost:8138`
+`http://localhost:8138`
 
 ### This Bot Uses The Power Of https://www.radio-browser.info/
